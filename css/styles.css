@@ -312,6 +312,10 @@ select:focus-visible {
   font-size: 10px;
 }
 
+.logout-button {
+  margin-left: auto;
+}
+
 .main-content {
   min-width: 0;
   flex: 1;

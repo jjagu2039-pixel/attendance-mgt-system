@@ -206,21 +206,19 @@ function getReactionEmoji(reaction) {
 function submitLogin(event) {
   event.preventDefault();
   const nameInput = getElement('#loginName');
-  const emailInput = getElement('#loginEmail');
+  const passwordInput = getElement('#loginPassword');
   const name = nameInput.value.trim();
-  const email = emailInput.value.trim();
+  const password = passwordInput.value;
   const nameError = getElement('#loginNameError');
-  const emailError = getElement('#loginEmailError');
+  const passwordError = getElement('#loginPasswordError');
 
   nameError.textContent = name ? '' : 'Name is required.';
-  emailError.textContent = !email
-    ? 'Email is required.'
-    : emailInput.validity.valid ? '' : 'Enter a valid email address.';
+  passwordError.textContent = password ? '' : 'Password is required.';
   nameInput.setAttribute('aria-invalid', String(!name));
-  emailInput.setAttribute('aria-invalid', String(Boolean(emailError.textContent)));
+  passwordInput.setAttribute('aria-invalid', String(Boolean(passwordError.textContent)));
 
-  if (!name || emailError.textContent) {
-    (name ? emailInput : nameInput).focus();
+  if (!name || passwordError.textContent) {
+    (name ? passwordInput : nameInput).focus();
     return;
   }
 
@@ -228,6 +226,18 @@ function submitLogin(event) {
   getElement('.user-card strong').textContent = name;
   getElement('#loginPage').hidden = true;
   getElement('#appShell').hidden = false;
+}
+
+function logoutUser() {
+  if (cameraStream) {
+    stopCamera();
+  }
+  getElement('#loginPassword').value = '';
+  getElement('#loginPasswordError').textContent = '';
+  getElement('#loginPassword').setAttribute('aria-invalid', 'false');
+  getElement('#loginPage').hidden = false;
+  getElement('#appShell').hidden = true;
+  getElement('#loginName').focus();
 }
 
 function showToast(message) {
@@ -723,13 +733,14 @@ getElement('#cameraButton').addEventListener('click', () => {
   }
 });
 getElement('#loginForm').addEventListener('submit', submitLogin);
+getElement('#logoutButton').addEventListener('click', logoutUser);
 getElement('#loginName').addEventListener('input', () => {
   getElement('#loginNameError').textContent = '';
   getElement('#loginName').setAttribute('aria-invalid', 'false');
 });
-getElement('#loginEmail').addEventListener('input', () => {
-  getElement('#loginEmailError').textContent = '';
-  getElement('#loginEmail').setAttribute('aria-invalid', 'false');
+getElement('#loginPassword').addEventListener('input', () => {
+  getElement('#loginPasswordError').textContent = '';
+  getElement('#loginPassword').setAttribute('aria-invalid', 'false');
 });
 getElement('#sidebarCamera').addEventListener('click', () => {
   getElement('#attendance').scrollIntoView({ behavior: 'smooth' });

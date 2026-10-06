@@ -19,20 +19,20 @@
       <div class="brand login-brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div>
       <p class="eyebrow">Attendance workspace</p>
       <h1 id="loginTitle">Welcome back.</h1>
-      <p class="login-copy">Enter your name and email to continue.</p>
+      <p class="login-copy">Enter your name and password to continue.</p>
       <form id="loginForm" novalidate>
         <label for="loginName">Name</label>
         <input id="loginName" name="name" type="text" value="Jaggu" autocomplete="name" aria-describedby="loginNameError">
         <small class="field-error" id="loginNameError" aria-live="polite"></small>
-        <label for="loginEmail">Email</label>
-        <input id="loginEmail" name="email" type="email" autocomplete="email" aria-describedby="loginEmailError">
-        <small class="field-error" id="loginEmailError" aria-live="polite"></small>
-        <button class="primary-button login-submit" type="submit">Continue</button>
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" name="password" type="password" autocomplete="current-password" aria-describedby="loginPasswordError">
+        <small class="field-error" id="loginPasswordError" aria-live="polite"></small>
+        <button class="primary-button login-submit" type="submit">Sign in</button>
       </form>
     </section>
   </main>
   <div class="app-shell" id="appShell" hidden>
-    <aside class="sidebar"><div class="brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div><p class="nav-label">Workspace</p><nav class="nav-list" aria-label="Primary navigation"><a class="nav-item active" href="#dashboard">⌂ <span>Dashboard</span></a><a class="nav-item" href="#attendance">✓ <span>Attendance</span><b id="navPresent">0</b></a><a class="nav-item" href="#students">♙ <span>Students</span></a><a class="nav-item" href="#reports">▥ <span>Reports</span></a></nav><div class="sidebar-note"><strong>Face check-in</strong><p>Use the camera to record a student's arrival and reaction.</p><button id="sidebarCamera" class="text-button">Open camera →</button></div><div class="user-card"><div class="avatar avatar-teal">AD</div><div><strong>Admin</strong><small>Attendance office</small></div></div></aside>
+    <aside class="sidebar"><div class="brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div><p class="nav-label">Workspace</p><nav class="nav-list" aria-label="Primary navigation"><a class="nav-item active" href="#dashboard">⌂ <span>Dashboard</span></a><a class="nav-item" href="#attendance">✓ <span>Attendance</span><b id="navPresent">0</b></a><a class="nav-item" href="#students">♙ <span>Students</span></a><a class="nav-item" href="#reports">▥ <span>Reports</span></a></nav><div class="sidebar-note"><strong>Face check-in</strong><p>Use the camera to record a student's arrival and reaction.</p><button id="sidebarCamera" class="text-button">Open camera →</button></div><div class="user-card"><div class="avatar avatar-teal">AD</div><div><strong>Admin</strong><small>Attendance office</small></div><button class="text-button logout-button" id="logoutButton" type="button">Log out</button></div></aside>
     <main class="main-content"><header class="topbar"><div class="mobile-brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div><div class="breadcrumbs">Workspace <span>/</span> Dashboard</div><div class="top-actions"><label class="search">⌕ <input id="studentSearch" type="search" placeholder="Search students..."></label><button class="icon-button" id="exportButton" title="Export attendance">⇩</button><button class="avatar avatar-teal">AD</button></div></header>
       <div class="page-content" id="dashboard"><section class="welcome-row"><div><p class="eyebrow"><time id="dashboardDateTime"></time></p><h1 id="welcomeHeading">Good morning, Jaggu.</h1><p class="subtitle">Here is today's attendance overview.</p></div><button class="primary-button" id="addStudentButton">＋ Add student</button></section>
         <section class="stats-grid"><article class="stat-card stat-main"><div class="stat-icon teal">◉</div><div><span>Today's attendance</span><strong id="attendanceRate">0%</strong><small id="attendanceDelta">No records yet</small></div><div class="mini-bars" id="miniBars"></div></article><article class="stat-card"><div class="stat-icon blue">✓</div><span>Present today</span><strong id="presentCount">0</strong><small class="positive">On time arrivals</small></article><article class="stat-card"><div class="stat-icon absent">−</div><span>Absent today</span><strong id="absentCount">0</strong><small>Not yet present</small></article><article class="stat-card"><div class="stat-icon coral">◷</div><span>Late arrivals</span><strong id="lateCount">0</strong><small>After 09:00 AM</small></article><article class="stat-card"><div class="stat-icon yellow">♙</div><span>Total students</span><strong id="totalStudents">0</strong><small>Registered learners</small></article></section>
