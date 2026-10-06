@@ -1,0 +1,773 @@
+ app.py
+ Online Attendance Management System
+  Features: face detection, reaction detection, date/day/month/year
+   check-in time, attendance records, and web dashboard.
+
+from flask import Flask, render_template_string, request, jsonify
+import sqlite3
+from datetime import datetime
+import cv2
+import base64
+import numpy as np
+
+app = Flask(__name__)
+DB = "attendance.db"
+
+
+def init_db():
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            student_id TEXT UNIQUE NOT NULL
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            date TEXT NOT NULL,
+            day TEXT NOT NULL,
+            month TEXT NOT NULL,
+            year INTEGER NOT NULL,
+            check_in TEXT NOT NULL,
+            status TEXT NOT NULL,
+            face_detected INTEGER DEFAULT 0,
+            reaction TEXT DEFAULT 'Unknown'
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Online Attendance Management System</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #172033;
+        }
+
+        header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 25px auto;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.08);
+            text-align: center;
+        }
+
+        .card h2 {
+            color: #2563eb;
+        }
+
+        .camera {
+            background: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        video {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 10px;
+            background: black;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 8px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        input {
+            padding: 11px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #2563eb;
+            color: white;
+        }
+
+        .present {
+            color: green;
+            font-weight: bold;
+        }
+
+        .absent {
+            color: red;
+            font-weight: bold;
+        }
+
+        #message {
+            margin: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Online Attendance Management System</h1>
+    <p>Face Detection • Time • Day • Month • Year • Reports</p>
+</header>
+
+<div class="container">
+
+    <div class="cards">
+        <div class="card">
+            <h2 id="total">0</h2>
+            <p>Total Students</p>
+        </div>
+
+        <div class="card">
+            <h2 id="today">0</h2>
+            <p>Today's Present</p>
+        </div>
+
+        <div class="card">
+            <h2 id="percentage">0%</h2>
+            <p>Attendance Percentage</p>
+        </div>
+
+        <div class="card">
+            <h2 id="clock">--:--:--</h2>
+            <p>Current Time</p>
+        </div>
+    </div>
+
+
+    <div class="camera">
+
+        <h2>Face Attendance</h2>
+
+        <video id="video" autoplay></video>
+
+        <br>
+
+        <input id="studentName" placeholder="Student Name">
+        <input id="studentId" placeholder="Student ID">
+
+        <br>
+
+        <button onclick="startCamera()">Start Camera</button>
+        <button onclick="markAttendance()">Mark Attendance</button>
+
+        <p id="message"></p>
+
+        <canvas id="canvas" style="display:none;"></canvas>
+
+    </div>
+
+
+    <div class="camera">
+
+        <h2>Register Student</h2>
+
+        <input id="regName" placeholder="Student Name">
+        <input id="regId" placeholder="Student ID">
+
+        <button onclick="registerStudent()">Register</button>
+
+        <p id="registerMessage"></p>
+
+    </div>
+
+
+    <div class="camera">
+
+        <h2>Attendance Records</h2>
+
+        <input type="date" id="filterDate">
+        <button onclick="loadAttendance()">Search</button>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Month</th>
+                    <th>Year</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Face</th>
+                    <th>Reaction</th>
+                </tr>
+            </thead>
+
+            <tbody id="attendanceTable"></tbody>
+        </table>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let stream = null;
+
+
+function updateClock() {
+
+    const now = new Date();
+
+    document.getElementById("clock").innerText =
+        now.toLocaleTimeString();
+
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+
+async function startCamera() {
+
+    try {
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: true
+        });
+
+        document.getElementById("video").srcObject = stream;
+
+        document.getElementById("message").innerText =
+            "Camera started. Please position your face in front of the camera.";
+
+    } catch (error) {
+
+        document.getElementById("message").innerText =
+            "Camera permission denied.";
+
+    }
+
+}
+
+
+function captureImage() {
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const context = canvas.getContext("2d");
+
+    context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    return canvas.toDataURL("image/jpeg");
+
+}
+
+
+async function markAttendance() {
+
+    const name = document.getElementById("studentName").value;
+    const studentId = document.getElementById("studentId").value;
+
+    if (!name || !studentId) {
+
+        document.getElementById("message").innerText =
+            "Enter student name and ID.";
+
+        return;
+
+    }
+
+    const image = captureImage();
+
+    const response = await fetch("/attendance", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            name: name,
+            student_id: studentId,
+            image: image
+        })
+
+    });
+
+    const data = await response.json();
+
+    document.getElementById("message").innerText =
+        data.message;
+
+    loadAttendance();
+    loadStats();
+
+}
+
+
+async function registerStudent() {
+
+    const name = document.getElementById("regName").value;
+    const studentId = document.getElementById("regId").value;
+
+    const response = await fetch("/register", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            name: name,
+            student_id: studentId
+        })
+
+    });
+
+    const data = await response.json();
+
+    document.getElementById("registerMessage").innerText =
+        data.message;
+
+    loadStats();
+
+}
+
+
+async function loadAttendance() {
+
+    const date = document.getElementById("filterDate").value;
+
+    let url = "/attendance";
+
+    if (date) {
+        url += "?date=" + date;
+    }
+
+    const response = await fetch(url);
+    const records = await response.json();
+
+    const table =
+        document.getElementById("attendanceTable");
+
+    table.innerHTML = "";
+
+    records.forEach(record => {
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${record.student_id}</td>
+            <td>${record.name}</td>
+            <td>${record.date}</td>
+            <td>${record.day}</td>
+            <td>${record.month}</td>
+            <td>${record.year}</td>
+            <td>${record.check_in}</td>
+            <td class="present">${record.status}</td>
+            <td>${record.face_detected ? "Yes" : "No"}</td>
+            <td>${record.reaction}</td>
+        `;
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+async function loadStats() {
+
+    const response = await fetch("/stats");
+    const data = await response.json();
+
+    document.getElementById("total").innerText =
+        data.total_students;
+
+    document.getElementById("today").innerText =
+        data.today_present;
+
+    document.getElementById("percentage").innerText =
+        data.percentage + "%";
+
+}
+
+
+loadAttendance();
+loadStats();
+
+</script>
+
+</body>
+</html>
+"""
+
+
+# OpenCV face detector
+face_detector = cv2.CascadeClassifier(
+    cv2.data.haarcascades +
+    "haarcascade_frontalface_default.xml"
+)
+
+
+def detect_face(image_data):
+
+    try:
+
+        image_data = image_data.split(",")[1]
+
+        image_bytes = base64.b64decode(image_data)
+
+        array = np.frombuffer(
+            image_bytes,
+            dtype=np.uint8
+        )
+
+        image = cv2.imdecode(
+            array,
+            cv2.IMREAD_COLOR
+        )
+
+        gray = cv2.cvtColor(
+            image,
+            cv2.COLOR_BGR2GRAY
+        )
+
+        faces = face_detector.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(80, 80)
+        )
+
+        if len(faces) > 0:
+
+            # Basic reaction placeholder.
+            # Replace with an emotion-recognition model
+            # for real emotion classification.
+            reaction = "Detected"
+
+            return True, reaction
+
+        return False, "No Face"
+
+    except Exception:
+
+        return False, "Unknown"
+
+
+@app.route("/")
+def home():
+
+    return render_template_string(HTML)
+
+
+@app.route("/register", methods=["POST"])
+def register():
+
+    data = request.get_json()
+
+    name = data.get("name")
+    student_id = data.get("student_id")
+
+    if not name or not student_id:
+
+        return jsonify({
+            "message": "Name and Student ID are required."
+        })
+
+    conn = sqlite3.connect(DB)
+
+    try:
+
+        conn.execute(
+            """
+            INSERT INTO students
+            (name, student_id)
+            VALUES (?, ?)
+            """,
+            (name, student_id)
+        )
+
+        conn.commit()
+
+        message = "Student registered successfully."
+
+    except sqlite3.IntegrityError:
+
+        message = "Student ID already exists."
+
+    finally:
+
+        conn.close()
+
+    return jsonify({
+        "message": message
+    })
+
+
+@app.route("/attendance", methods=["POST"])
+def mark_attendance():
+
+    data = request.get_json()
+
+    name = data.get("name")
+    student_id = data.get("student_id")
+    image = data.get("image")
+
+    if not name or not student_id or not image:
+
+        return jsonify({
+            "message": "Missing attendance information."
+        })
+
+    face_detected, reaction = detect_face(image)
+
+    if not face_detected:
+
+        return jsonify({
+            "message": "No face detected. Please try again."
+        })
+
+    now = datetime.now()
+
+    date = now.strftime("%Y-%m-%d")
+    day = now.strftime("%A")
+    month = now.strftime("%B")
+    year = now.year
+    check_in = now.strftime("%I:%M:%S %p")
+
+    conn = sqlite3.connect(DB)
+
+    cur = conn.cursor()
+
+    # Prevent duplicate attendance on the same day
+    cur.execute(
+        """
+        SELECT id FROM attendance
+        WHERE student_id = ?
+        AND date = ?
+        """,
+        (student_id, date)
+    )
+
+    existing = cur.fetchone()
+
+    if existing:
+
+        conn.close()
+
+        return jsonify({
+            "message": "Attendance already marked for today."
+        })
+
+    cur.execute(
+        """
+        INSERT INTO attendance
+        (
+            student_id,
+            name,
+            date,
+            day,
+            month,
+            year,
+            check_in,
+            status,
+            face_detected,
+            reaction
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            student_id,
+            name,
+            date,
+            day,
+            month,
+            year,
+            check_in,
+            "Present",
+            1,
+            reaction
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message":
+        f"Attendance marked successfully at {check_in}."
+    })
+
+
+@app.route("/attendance", methods=["GET"])
+def get_attendance():
+
+    date = request.args.get("date")
+
+    conn = sqlite3.connect(DB)
+
+    conn.row_factory = sqlite3.Row
+
+    if date:
+
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM attendance
+            WHERE date = ?
+            ORDER BY check_in DESC
+            """,
+            (date,)
+        ).fetchall()
+
+    else:
+
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM attendance
+            ORDER BY date DESC, check_in DESC
+            """
+        ).fetchall()
+
+    conn.close()
+
+    return jsonify([
+        dict(row)
+        for row in rows
+    ])
+
+
+@app.route("/stats")
+def stats():
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    conn = sqlite3.connect(DB)
+
+    cur = conn.cursor()
+
+    total_students = cur.execute(
+        "SELECT COUNT(*) FROM students"
+    ).fetchone()[0]
+
+    today_present = cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM attendance
+        WHERE date = ?
+        AND status = 'Present'
+        """,
+        (today,)
+    ).fetchone()[0]
+
+    total_attendance = cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM attendance
+        WHERE status = 'Present'
+        """
+    ).fetchone()[0]
+
+    conn.close()
+
+    if total_students > 0:
+
+        percentage = round(
+            (total_attendance /
+             total_students) * 100,
+            2
+        )
+
+    else:
+
+        percentage = 0
+
+    return jsonify({
+        "total_students": total_students,
+        "today_present": today_present,
+        "percentage": percentage
+    })
+
+
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )

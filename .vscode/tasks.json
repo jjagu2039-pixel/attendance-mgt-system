@@ -1,0 +1,61 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run attendance app",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"python\\app.py"
+			],
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Python",
+			"type": "shell",
+			"command": "python --version",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Flask",
+			"type": "shell",
+			"command": "python -c \"import flask; print(flask.__version__)\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Flask via cmd",
+			"type": "shell",
+			"command": "cmd /c \"python -c \\\"import flask; print(flask.__version__)\\\"\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Flask with single quotes",
+			"type": "shell",
+			"command": "python -c 'import flask; print(flask.__version__)'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start attendance app",
+			"type": "shell",
+			"command": "python 'C:\\Users\\vamshikiran\\OneDrive\\Desktop\\online attendance mgt system\\python\\app.py'",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run attendance app fixed",
+			"type": "shell",
+			"command": "cmd /c \"cd /d \"\"C:\\Users\\vamshikiran\\OneDrive\\Desktop\\online attendance mgt system\"\" && python .\\python\\app.py\"",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

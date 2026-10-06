@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Face-assisted online attendance management dashboard">
+  <script>
+    if (window.location.protocol === 'file:') {
+      window.location.replace('http://127.0.0.1:5000/');
+    }
+  </script>
+  <title>Attendly | Online Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('css_file', filename='styles.css') }}">
+</head>
+<body>
+  <main class="login-screen" id="loginPage">
+    <section class="login-panel" aria-labelledby="loginTitle">
+      <div class="brand login-brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div>
+      <p class="eyebrow">Attendance workspace</p>
+      <h1 id="loginTitle">Welcome back.</h1>
+      <p class="login-copy">Enter your name and email to continue.</p>
+      <form id="loginForm" novalidate>
+        <label for="loginName">Name</label>
+        <input id="loginName" name="name" type="text" value="Jaggu" autocomplete="name" aria-describedby="loginNameError">
+        <small class="field-error" id="loginNameError" aria-live="polite"></small>
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" name="email" type="email" autocomplete="email" aria-describedby="loginEmailError">
+        <small class="field-error" id="loginEmailError" aria-live="polite"></small>
+        <button class="primary-button login-submit" type="submit">Continue</button>
+      </form>
+    </section>
+  </main>
+  <div class="app-shell" id="appShell" hidden>
+    <aside class="sidebar"><div class="brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div><p class="nav-label">Workspace</p><nav class="nav-list" aria-label="Primary navigation"><a class="nav-item active" href="#dashboard">⌂ <span>Dashboard</span></a><a class="nav-item" href="#attendance">✓ <span>Attendance</span><b id="navPresent">0</b></a><a class="nav-item" href="#students">♙ <span>Students</span></a><a class="nav-item" href="#reports">▥ <span>Reports</span></a></nav><div class="sidebar-note"><strong>Face check-in</strong><p>Use the camera to record a student's arrival and reaction.</p><button id="sidebarCamera" class="text-button">Open camera →</button></div><div class="user-card"><div class="avatar avatar-teal">AD</div><div><strong>Admin</strong><small>Attendance office</small></div></div></aside>
+    <main class="main-content"><header class="topbar"><div class="mobile-brand"><span class="brand-mark">A</span><span class="brand-name">attendly</span></div><div class="breadcrumbs">Workspace <span>/</span> Dashboard</div><div class="top-actions"><label class="search">⌕ <input id="studentSearch" type="search" placeholder="Search students..."></label><button class="icon-button" id="exportButton" title="Export attendance">⇩</button><button class="avatar avatar-teal">AD</button></div></header>
+      <div class="page-content" id="dashboard"><section class="welcome-row"><div><p class="eyebrow"><time id="dashboardDateTime"></time></p><h1 id="welcomeHeading">Good morning, Jaggu.</h1><p class="subtitle">Here is today's attendance overview.</p></div><button class="primary-button" id="addStudentButton">＋ Add student</button></section>
+        <section class="stats-grid"><article class="stat-card stat-main"><div class="stat-icon teal">◉</div><div><span>Today's attendance</span><strong id="attendanceRate">0%</strong><small id="attendanceDelta">No records yet</small></div><div class="mini-bars" id="miniBars"></div></article><article class="stat-card"><div class="stat-icon blue">✓</div><span>Present today</span><strong id="presentCount">0</strong><small class="positive">On time arrivals</small></article><article class="stat-card"><div class="stat-icon absent">−</div><span>Absent today</span><strong id="absentCount">0</strong><small>Not yet present</small></article><article class="stat-card"><div class="stat-icon coral">◷</div><span>Late arrivals</span><strong id="lateCount">0</strong><small>After 09:00 AM</small></article><article class="stat-card"><div class="stat-icon yellow">♙</div><span>Total students</span><strong id="totalStudents">0</strong><small>Registered learners</small></article></section>
+        <section class="dashboard-grid"><article class="panel attendance-panel" id="attendance"><div class="panel-header"><div><h2>Attendance overview</h2><p>Daily check-ins for the selected month</p></div><label class="select-wrap">Month <select id="monthFilter"></select></label></div><div class="chart" id="attendanceChart"></div><div class="chart-legend"><span><i class="legend-dot present-dot"></i>Present</span><span><i class="legend-dot absent-dot"></i>Absent</span><span class="chart-note" id="chartNote">No saved records</span></div></article><article class="panel quick-panel"><div class="panel-header"><div><h2>Period check-in</h2><p id="currentPeriodLabel">Detecting current period...</p></div><span class="live-dot"><i></i> Live</span></div><div class="camera-box"><video id="camera" autoplay muted playsinline></video><div class="camera-placeholder" id="cameraPlaceholder"><span>◉</span><strong>Camera is off</strong><small>Start camera to verify a face</small></div><div class="camera-status" id="cameraStatus">Ready for check-in</div></div><div class="checkin-fields"><input id="checkinName" placeholder="Student name"><input id="checkinId" placeholder="Student USN"><select id="reactionSelect" aria-label="Face reaction"><option value="Happy">😊 Happy reaction</option><option value="Neutral">😐 Neutral reaction</option><option value="Focused">🙂 Focused reaction</option></select></div><div class="quick-actions"><button class="secondary-button" id="cameraButton">Start camera</button><button class="primary-button" id="checkinButton">Mark present</button></div><p class="privacy-note">A camera frame is checked for a face before attendance is saved.</p></article></section>
+        <section class="panel activity-panel" id="students"><div class="panel-header"><div><h2>Recent attendance</h2><p>Latest student check-ins and face reactions</p></div><button class="text-button" id="viewAllButton">View all →</button></div><div class="table-scroll"><table><thead><tr><th>Student</th><th>USN</th><th>Class</th><th>Period</th><th>Check-in</th><th>Check-out</th><th>Reaction</th><th>Status</th><th>Action</th></tr></thead><tbody id="activityTable"></tbody></table></div></section>
+        <section class="panel period-report-panel" id="reports"><div class="panel-header"><div><h2>Period attendance reports</h2><p>Daily, weekly, and monthly attendance by class period</p></div><div class="report-controls"><label class="select-wrap">View <select id="reportRange"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><input id="dailyReportDate" type="date" aria-label="Report date"><input id="monthlyReportMonth" type="month" aria-label="Report month" hidden><button class="secondary-button" id="loadPeriodReport">Show report</button><button class="secondary-button" id="reportButton" title="Download CSV">CSV</button><button class="secondary-button" id="excelReportButton" title="Download Excel-compatible file">Excel</button><button class="secondary-button" id="pdfReportButton" title="Print or save as PDF">PDF</button></div></div><div class="period-report-summary" id="periodReportSummary"></div><div class="table-scroll"><table><thead><tr><th>Date</th><th>Period</th><th>Student</th><th>USN</th><th>Time</th><th>Status</th><th>Face check</th></tr></thead><tbody id="periodReportTable"><tr><td colspan="7">Choose a date or month to view attendance.</td></tr></tbody></table></div></section>
+      </div></main>
+  </div>
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true"><section class="modal" role="dialog" aria-modal="true"><button class="close-button" id="closeModal">×</button><p class="eyebrow">Student directory</p><h2>Add a student</h2><p class="modal-copy">Create a profile for attendance check-ins.</p><form id="studentForm"><label>Full name<input name="name" required placeholder="e.g. Maya Patel"></label><label>Class or department<input name="department" required placeholder="e.g. Class 10-A"></label><label>Student ID<input name="studentId" required placeholder="e.g. STU-001"></label><div class="modal-actions"><button type="button" class="secondary-button" id="cancelModal">Cancel</button><button class="primary-button" type="submit">Add student</button></div></form></section></div>
+  <div class="toast" id="toast" role="status"><span></span></div><script src="{{ url_for('javascript_file', filename='app.js') }}"></script>
+</body></html>
